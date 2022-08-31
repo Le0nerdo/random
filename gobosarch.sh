@@ -200,7 +200,7 @@ boot_loader_configuration () {
 	echo "### Starting boot loader configuration..."
 
 	bootctl --graceful install
-	echo y | pacman -S "$PROCESSlsOR"-ucode
+	echo y | pacman -S "$PROCESSOR"-ucode
 
 	echo "title Arch Linux" > /boot/loader/entries/arch.conf
 	echo "linux /vmlinuz-linux" >> /boot/loader/entries/arch.conf
