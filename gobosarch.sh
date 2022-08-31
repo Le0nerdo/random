@@ -58,7 +58,9 @@ HOME_SIZE="0"
 
 # 2 USER
 HOST_NAME="compuutteri"
-USERNAME="asd"
+ROOT_PASSWORD=" "
+USER_NAME="asd"
+USER_PASSWORD="asd"
 
 # 3 LOCALIZATION
 LOCALIZATION="en_US.UTF-8 UTF-8"
@@ -68,6 +70,7 @@ KEYMAP="fi"
 
 # 4 DEVICES
 PROCESSOR="intel" # Has to be set to 'intel' or 'amd'.
+GPU="nvidia" # supports only 'nvidia'
 
 # 5 PROGRAMS
 
@@ -89,7 +92,7 @@ main() {
 		network_configuration
 		user_configuration
 		boot_loader_configuration
-		gpu_configuration
+		# gpu_configuration
 
 		rm /gobosarch.sh
 	else
@@ -97,7 +100,7 @@ main() {
 		prepare_drive
 
 		# install linux
-		pacstrap /mnt base linux linux-firmware
+		pacstrap /mnt base linux-lts linux-firmware
 
 		# configure fstab
 		genfstab -U /mnt >> /mnt/etc/fstab
@@ -107,6 +110,7 @@ main() {
 		arch-chroot /mnt ./gobosarch.sh configure
 
 		echo "### Installation Complete."
+		echo "### Reboot with 'reboot' and take out the installation medium."
 	fi
 }
 
@@ -171,7 +175,7 @@ network_configuration () {
 	echo "### Starting network configuration..."
 
 	echo "$HOST_NAME" > /etc/hostname
-	pacman -S dhcpcd networkmanager
+	echo y | pacman -S dhcpcd networkmanager
 	systemctl enable dhcpcd.service
 	systemctl enable NetworkManager.service
 
@@ -181,10 +185,11 @@ network_configuration () {
 user_configuration () {
 	echo "### Starting user configuration..."
 
-	pacman -S sudo
-	passwd
-	useradd -m -g user -G wheel,storage,power -s /bin/bash $USERNAME
-	passwd $USERNAME
+	# TODO PASSWORD PROMT AGAIN IF FAILED
+	echo y | pacman -S sudo
+	echo -e ""$ROOT_PASSWORD"\n"$ROOT_PASSWORD"" | passwd
+	useradd -m -g users -G wheel,storage,power -s /bin/bash $USER_NAME
+	echo -e ""$USER_PASSWORD"\n"$USER_PASSWORD"" | passwd $USER_NAME
 	echo "%wheel ALL=(ALL) ALL" | EDITOR="tee -a" visudo
 	echo "Defaults rootpw" | EDITOR="tee -a" visudo
 
@@ -195,7 +200,7 @@ boot_loader_configuration () {
 	echo "### Starting boot loader configuration..."
 
 	bootctl --graceful install
-	pacman -S "$PROCESSOR"-ucode
+	echo y | pacman -S "$PROCESSlsOR"-ucode
 
 	echo "title Arch Linux" > /boot/loader/entries/arch.conf
 	echo "linux /vmlinuz-linux" >> /boot/loader/entries/arch.conf
@@ -207,7 +212,39 @@ boot_loader_configuration () {
 }
 
 gpu_configuration () {
-	echo "### gpu_configuration is not yet implemented."
+	echo "### Starting GPU configuration..."
+
+	if [ "$GPU" == "nvidia"]
+	then
+		echo y | pacman -S linux-headers nvidia-dkms nvidia-utils opencl-nvidia \
+		libglvnd lib32-nvidia-utils lib32-opencl-nvidia lib32-libglvnd nvidia-settings
+
+		# Set nvidia_drm.modeset=1 kernel parameter
+		sed -i '$s/$/ nvidia-drm.modeset=1/' /boot/loader/entries/arch.conf
+
+		# add modules for early loading
+		sed -i 's/MODULES=(/&nvidia nvidia_modeset nvidia_uvm nvidia_drm/' /etc/mkinitcpio.conf
+
+
+		# Automatic update to initramfs after NVIDIA driver update
+		mkdir /etc/pacman.d/hooks
+
+		echo "[Trigger]" > /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Install" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Upgrade" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Remove" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Type=Package" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Target=nvidia-dkms" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Target=linux" >> /etc/pacman.d/hooks/nvidia.hook
+
+		echo "[Action]" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Depends=mkinitcpio" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "When=PostTransaction" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "NeedsTargets" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Exec=/bin/sh -c 'while read -r trg; do case $trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'" >> /etc/pacman.d/hooks/nvidia.hook
+	fi
+
+	echo "### Completed GPU configuration."
 }
 
 main "$@"; exit
