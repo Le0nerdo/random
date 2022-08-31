@@ -92,7 +92,7 @@ main() {
 		network_configuration
 		user_configuration
 		boot_loader_configuration
-		# gpu_configuration
+		gpu_configuration
 
 		rm /gobosarch.sh
 	else
@@ -100,7 +100,7 @@ main() {
 		prepare_drive
 
 		# install linux
-		pacstrap /mnt base linux-lts linux-firmware
+		pacstrap /mnt base linux linux-firmware
 
 		# configure fstab
 		genfstab -U /mnt >> /mnt/etc/fstab
