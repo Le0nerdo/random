@@ -92,7 +92,7 @@ main() {
 		network_configuration
 		user_configuration
 		boot_loader_configuration
-		gpu_configuration
+		# gpu_configuration
 
 		rm /gobosarch.sh
 	else
