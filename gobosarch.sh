@@ -194,7 +194,7 @@ user_configuration () {
 	echo "Defaults rootpw" | EDITOR="tee -a" visudo
 
 	echo "### Completed user configuration."
-}
+}#NV134 (GP104)
 
 boot_loader_configuration () {
 	echo "### Starting boot loader configuration..."
@@ -214,34 +214,11 @@ boot_loader_configuration () {
 gpu_configuration () {
 	echo "### Starting GPU configuration..."
 
-	if [ "$GPU" == "nvidia"]
+	if [ "$GPU" == "nvidia" ]
 	then
-		echo y | pacman -S linux-headers nvidia-dkms nvidia-utils opencl-nvidia \
-		libglvnd lib32-nvidia-utils lib32-opencl-nvidia lib32-libglvnd nvidia-settings
+		echo y | pacman -S mesa lib32-mesa xf86-video-nouveau
 
-		# Set nvidia_drm.modeset=1 kernel parameter
-		sed -i '$s/$/ nvidia-drm.modeset=1/' /boot/loader/entries/arch.conf
-
-		# add modules for early loading
-		sed -i 's/MODULES=(/&nvidia nvidia_modeset nvidia_uvm nvidia_drm/' /etc/mkinitcpio.conf
-
-
-		# Automatic update to initramfs after NVIDIA driver update
-		mkdir /etc/pacman.d/hooks
-
-		echo "[Trigger]" > /etc/pacman.d/hooks/nvidia.hook
-		echo "Operation=Install" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Operation=Upgrade" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Operation=Remove" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Type=Package" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Target=nvidia-dkms" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Target=linux" >> /etc/pacman.d/hooks/nvidia.hook
-
-		echo "[Action]" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Depends=mkinitcpio" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "When=PostTransaction" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "NeedsTargets" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Exec=/bin/sh -c 'while read -r trg; do case $trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'" >> /etc/pacman.d/hooks/nvidia.hook
+		sed -i 's/MODULES=(/&nouveau/' /etc/mkinitcpio.conf
 	fi
 
 	echo "### Completed GPU configuration."
