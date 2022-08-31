@@ -194,7 +194,7 @@ user_configuration () {
 	echo "Defaults rootpw" | EDITOR="tee -a" visudo
 
 	echo "### Completed user configuration."
-}#NV134 (GP104)
+}
 
 boot_loader_configuration () {
 	echo "### Starting boot loader configuration..."
