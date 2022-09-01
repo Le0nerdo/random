@@ -214,7 +214,7 @@ boot_loader_configuration () {
 gpu_configuration () {
 	echo "### Starting GPU configuration..."
 
-	if [ "$GPU" == "nvidia"]
+	if [ "$GPU" == "nvidia" ]
 	then
 		echo "" >> /etc/pacman.conf
 		echo "[testing]" >> /etc/pacman.conf
