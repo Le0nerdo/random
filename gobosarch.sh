@@ -30,7 +30,7 @@
 # This script follows https://wiki.archlinux.org/title/installation_guide .
 # There is no quarantee that this script is up to date and you should check it.
 # 1. Follow the instructions on the website to boot into the live environment.
-# 2. Set your keyboard layout with the command 'laodkeys'
+# 2. Set your keyboard layout with the command 'loadkeys'
 # 3. Make sure that you are in the boot mode by checking that
 #    /sys/firmware/efi/efivars has content.
 # 4. Make sure that you have internet access by pinging some server.
@@ -92,7 +92,7 @@ main() {
 		network_configuration
 		user_configuration
 		boot_loader_configuration
-		# gpu_configuration
+		gpu_configuration
 
 		rm /gobosarch.sh
 	else
@@ -214,14 +214,48 @@ boot_loader_configuration () {
 gpu_configuration () {
 	echo "### Starting GPU configuration..."
 
-	if [ "$GPU" == "nvidia" ]
+	if [ "$GPU" == "nvidia"]
 	then
-		echo y | pacman -S mesa lib32-mesa xf86-video-nouveau
+		echo "" >> /etc/pacman.conf
+		echo "[testing]" >> /etc/pacman.conf
+		echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
 
-		sed -i 's/MODULES=(/&nouveau/' /etc/mkinitcpio.conf
+		echo "" >> /etc/pacman.conf
+		echo "[multilib-testing]" >> /etc/pacman.conf
+		echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
+		pacman -Sy
+
+		echo y | pacman -S nvidia
+
+		# Set nvidia_drm.modeset=1 kernel parameter
+		sed -i '$s/$/ nvidia-drm.modeset=1/' /boot/loader/entries/arch.conf
+
+		# add modules for early loading
+		sed -i 's/MODULES=(/&nvidia nvidia_modeset nvidia_uvm nvidia_drm/' /etc/mkinitcpio.conf
+
+		# Automatic update to initramfs after NVIDIA driver update
+		mkdir /etc/pacman.d/hooks
+
+		echo "[Trigger]" > /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Install" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Upgrade" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Operation=Remove" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Type=Package" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Target=nvidia" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Target=linux" >> /etc/pacman.d/hooks/nvidia.hook
+
+		echo "[Action]" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Depends=mkinitcpio" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "When=PostTransaction" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "NeedsTargets" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Exec=/bin/sh -c 'while read -r trg; do case $trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'" >> /etc/pacman.d/hooks/nvidia.hook
 	fi
 
 	echo "### Completed GPU configuration."
 }
 
 main "$@"; exit
+
+# pacman -S xorg-server plasma kde-applications xorg-xinit vim
+# make the .xinitrc file
+#
