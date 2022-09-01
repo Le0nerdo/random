@@ -225,7 +225,8 @@ gpu_configuration () {
 		echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
 		pacman -Sy
 
-		echo y | pacman -S nvidia
+		echo y | pacman -S linux-headers nvidia-dkms nvidia-utils opencl-nvidia \
+		libglvnd lib32-nvidia-utils lib32-opencl-nvidia lib32-libglvnd nvidia-settings
 
 		# Set nvidia_drm.modeset=1 kernel parameter
 		sed -i '$s/$/ nvidia-drm.modeset=1/' /boot/loader/entries/arch.conf
@@ -241,7 +242,7 @@ gpu_configuration () {
 		echo "Operation=Upgrade" >> /etc/pacman.d/hooks/nvidia.hook
 		echo "Operation=Remove" >> /etc/pacman.d/hooks/nvidia.hook
 		echo "Type=Package" >> /etc/pacman.d/hooks/nvidia.hook
-		echo "Target=nvidia" >> /etc/pacman.d/hooks/nvidia.hook
+		echo "Target=nvidia-dkms" >> /etc/pacman.d/hooks/nvidia.hook
 		echo "Target=linux" >> /etc/pacman.d/hooks/nvidia.hook
 
 		echo "[Action]" >> /etc/pacman.d/hooks/nvidia.hook
@@ -256,6 +257,7 @@ gpu_configuration () {
 
 main "$@"; exit
 
-# pacman -S xorg-server plasma kde-applications xorg-xinit vim
+# pacman -S xorg-server plasma kde-applications xorg-xinit vim https://archlinux.org/packages/extra/x86_64/xf86-video-fbdev/
 # make the .xinitrc file
-#
+# export DESKTOP_SESSION=plasma
+# exec startplasma-x11
