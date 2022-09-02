@@ -41,10 +41,9 @@
 #    2. USER
 #    3. LOCALIZATION
 #    4. DEVICES
-#    5. PROGRAMS
 # 7. Make the script executeable with 'chmod +x gobosarch.sh'.
-# 8. Run the script with './gobosarch.sh'.
-# 9. Follow the instructions of the script.
+# 8. Run the script with './gobosarch.sh install'.
+# 9. Reboot with 'reboot' and take out the installation medium."
 
 # 1 DRIVE
 # if HOME_SIZE is 0 it uses the rest of the DRIVE
@@ -95,7 +94,8 @@ main() {
 		gpu_configuration
 
 		rm /gobosarch.sh
-	else
+	elif [ "$1" == "install" ]
+	then
 		timedatectl set-ntp true
 		prepare_drive
 
@@ -111,6 +111,17 @@ main() {
 
 		echo "### Installation Complete."
 		echo "### Reboot with 'reboot' and take out the installation medium."
+	elif [ "$1" == "programs" ]
+	then
+		install_programs
+	else
+		echo "Invalid argument! "$1""
+		echo "Valid arguments are:"
+		echo "    install - to install and configure arch"
+		echo "    programs - to install GUI and other programs"
+		echo ""
+		echo "Arguments are given in from:"
+		echo "    ./gobosarch.sh argument"
 	fi
 }
 
@@ -185,7 +196,6 @@ network_configuration () {
 user_configuration () {
 	echo "### Starting user configuration..."
 
-	# TODO PASSWORD PROMT AGAIN IF FAILED
 	echo y | pacman -S sudo
 	echo -e ""$ROOT_PASSWORD"\n"$ROOT_PASSWORD"" | passwd
 	useradd -m -g users -G wheel,storage,power -s /bin/bash $USER_NAME
@@ -216,14 +226,6 @@ gpu_configuration () {
 
 	if [ "$GPU" == "nvidia" ]
 	then
-		echo "" >> /etc/pacman.conf
-		echo "[testing]" >> /etc/pacman.conf
-		echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
-
-		echo "" >> /etc/pacman.conf
-		echo "[multilib-testing]" >> /etc/pacman.conf
-		echo "Include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
-		pacman -Sy
 
 		echo y | pacman -S linux-headers nvidia-dkms nvidia-utils opencl-nvidia \
 		libglvnd lib32-nvidia-utils lib32-opencl-nvidia lib32-libglvnd nvidia-settings
@@ -255,9 +257,12 @@ gpu_configuration () {
 	echo "### Completed GPU configuration."
 }
 
-main "$@"; exit
+install_programs () {
+	echo "### Install Programs not ready"
+	pacman -S xorg-server plasma xorg-xinit vim xf86-video-fbdev xorg
 
-# pacman -S xorg-server plasma kde-applications xorg-xinit vim https://archlinux.org/packages/extra/x86_64/xf86-video-fbdev/
-# make the .xinitrc file
-# export DESKTOP_SESSION=plasma
-# exec startplasma-x11
+	echo "export DESKTOP_SESSION=plasma" > ./xinitrc
+	echo "exec startplasma-x11" >> ./xinitrc
+}
+
+main "$@"; exit
